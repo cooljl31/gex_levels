@@ -1,11 +1,8 @@
 Symbol,Price Level,Note,Foreground Color,Background Color,Text Alignment,Diameter,Draw Note Price Horizontal Line
-SPY,#automap RITHMIC,,,,,,TRUE
+#automap RITHMIC,,,,,,,
 SPY,670,CALL WALL,#FFFFFF,#008000,center,,TRUE
 SPY,645,PUT WALL,#FFFFFF,#8B0000,center,,TRUE
-SPY,0,ZERO GAMMA,#FFFFFF,#9370DB,center,,TRUE
 SPY,645.18,SPOT PRICE,#000000,#FFFF00,center,,TRUE
-QQQ,#automap RITHMIC,,,,,,TRUE
 QQQ,595,CALL WALL,#FFFFFF,#008000,center,,TRUE
 QQQ,570,PUT WALL,#FFFFFF,#8B0000,center,,TRUE
-QQQ,0,ZERO GAMMA,#FFFFFF,#9370DB,center,,TRUE
 QQQ,584.31,SPOT PRICE,#000000,#FFFF00,center,,TRUE
