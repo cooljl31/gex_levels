@@ -322,7 +322,7 @@ def generate_local_csv(assets_data_list, maxchange_data=None):
                             continue
                         label = MAXCHANGE_PRIOR_LABELS.get(prior_key, prior_key)
                         direction = "+" if gex_value >= 0 else ""
-                        note_text = f"GEX {label} {direction}{gex_value:.0f}"
+                        note_text = f"-- GEX {label} {direction}{gex_value:.0f} --"
                         color = COLOR_MAXCHANGE_BUILD if gex_value >= 0 else COLOR_MAXCHANGE_CUT
                         fg_color, bg_color = color.split(',')
                         writer.writerow({
@@ -340,7 +340,7 @@ def generate_local_csv(assets_data_list, maxchange_data=None):
                             futures_ticker_mc, mult_mc = multipliers[asset_ticker]
                             futures_sym_mc = symbol_mapping.get(futures_ticker_mc, futures_ticker_mc)
                             converted_strike = round(strike * mult_mc, 2)
-                            note_cross = f"GEX {label} ({asset_ticker}) {direction}{gex_value:.0f}"
+                            note_cross = f"-- GEX {label} ({asset_ticker}) {direction}{gex_value:.0f} --"
                             writer.writerow({
                                 "Symbol": futures_sym_mc,
                                 "Price Level": converted_strike,
