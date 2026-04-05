@@ -2,7 +2,13 @@
 
 ## Current Setup
 
-✅ **Automatic updates every 5 minutes** during market hours (Mon-Fri, 9:30 AM - 4:00 PM ET)
+✅ **Automatic updates twice daily** at US market open and before close
+
+### Schedule (German Time / CET/CEST):
+
+- **3:30 PM (15:30)** - US market open (9:30 AM ET)
+- **9:30 PM (21:30)** - Before US market close (3:30 PM ET)
+- **Monday-Friday only**
 
 ### Files Created:
 
@@ -66,7 +72,7 @@ cd ~/Documents/Bookmap\ cloud\ notes
 Add this URL to your Bookmap Cloud Notes settings:
 
 ```
-https://raw.githubusercontent.com/cooljl31/gex_levels/master/gex_levels.csv
+https://raw.githubusercontent.com/cooljl31/gex_levels/main/gex_levels.csv
 ```
 
 ## Timezone Configuration
