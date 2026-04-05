@@ -1,5 +1,7 @@
 # Secret keys - never commit these
 .env
+com.gexbot.bookmap.update.plist
+.tool-versions
 
 # Log files
 *.log
