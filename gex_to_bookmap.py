@@ -333,7 +333,7 @@ def generate_local_csv(assets_data_list, maxchange_data=None):
                             "Background Color": bg_color,
                             "Text Alignment": "center",
                             "Diameter": "1",
-                            "Draw Note Price Horizontal Line": "FALSE"
+                            "Draw Note Price Horizontal Line": "TRUE"
                         })
                         # Cross-asset: also write on Futures chart
                         if asset_ticker in multipliers:
@@ -349,7 +349,7 @@ def generate_local_csv(assets_data_list, maxchange_data=None):
                                 "Background Color": bg_color,
                                 "Text Alignment": "center",
                                 "Diameter": "1",
-                                "Draw Note Price Horizontal Line": "FALSE"
+                                "Draw Note Price Horizontal Line": "TRUE"
                             })
 
         print(f"Lokale CSV-Datei erstellt: {FINAL_CSV_PATH}")
