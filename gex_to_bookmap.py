@@ -83,6 +83,18 @@ GEXBOT_BASE_URL = "https://api.gexbot.com" # Classic API URL
 AGGREGATION_PERIODS = ["zero"]
 # AGGREGATION_PERIODS = ["full", "zero", "one"]
 
+# Max Priors: which lookback periods to show in Bookmap
+# Options: "current", "one", "five", "ten", "fifteen", "thirty"
+MAXCHANGE_PRIORS = ["current", "one", "five", "ten", "fifteen", "thirty"]
+MAXCHANGE_PRIOR_LABELS = {
+    "current": "now",
+    "one":     "1m",
+    "five":    "5m",
+    "ten":     "10m",
+    "fifteen": "15m",
+    "thirty":  "30m",
+}
+
 # Liste der Assets, die du tracken willst (GEXbot Ticker-Namen)
 # BEISPIEL: ["SPY", "QQQ", "SPX", "NDX"]
 # You can also use "ALL_STOCKS", "ALL_INDEXES", "ALL_FUTURES" to fetch all available
@@ -147,10 +159,12 @@ GITHUB_REPO_NAME = "gex_levels"
 GITHUB_BRANCH = "main"
 
 # 4. BOOKMAP CSV VISUALISIERUNG (Farben: Vordergrund,Hintergrund)
-COLOR_CALL_WALL = "#FFFFFF,#008000"  # Weiß auf Grün
-COLOR_PUT_WALL  = "#FFFFFF,#8B0000"  # Weiß auf Rot
-COLOR_ZERO_GEX  = "#FFFFFF,#9370DB"  # Weiß auf Lila
-COLOR_MAX_GEX   = "#000000,#FFFF00"  # Schwarz auf Gelb
+COLOR_CALL_WALL        = "#FFFFFF,#008000"  # Weiß auf Grün
+COLOR_PUT_WALL         = "#FFFFFF,#8B0000"  # Weiß auf Rot
+COLOR_ZERO_GEX         = "#FFFFFF,#9370DB"  # Weiß auf Lila
+COLOR_MAX_GEX          = "#000000,#FFFF00"  # Schwarz auf Gelb
+COLOR_MAXCHANGE_BUILD  = "#000000,#00BFFF"  # Schwarz auf Blau  (GEX-Aufbau)
+COLOR_MAXCHANGE_CUT    = "#FFFFFF,#FF6600"  # Weiß auf Orange   (GEX-Abbau)
 
 # Vollständiger Pfad zur CSV-Datei
 FINAL_CSV_PATH = os.path.join(LOCAL_GIT_REPO_DIR, CSV_FILENAME)
@@ -176,7 +190,21 @@ def fetch_gex_data(asset_ticker, aggregation_period):
         print(f"Fehler beim Abrufen der Daten für {asset_ticker} ({aggregation_period}): {e}")
         return None
 
-def generate_local_csv(assets_data_list):
+def fetch_maxchange_data(asset_ticker, aggregation_period):
+    """Fetches the GEX Max Change (Max Priors) data for a ticker."""
+    url = f"{GEXBOT_BASE_URL}/{asset_ticker}/classic/{aggregation_period}/maxchange"
+    headers = {"User-Agent": "BookmapGEX/1.0", "Accept": "application/json"}
+    params = {"key": GEXBOT_API_KEY}
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Fehler beim Abrufen von MaxChange für {asset_ticker}: {e}")
+        return None
+
+
+def generate_local_csv(assets_data_list, maxchange_data=None):
     """Erstellt die Bookmap CSV-Datei lokal im Git-Ordner."""
 
     # CSV-Spaltenüberschriften
@@ -282,11 +310,52 @@ def generate_local_csv(assets_data_list):
                             "Diameter": "1",
                             "Draw Note Price Horizontal Line": draw_line
                         })
+                # --- Max Priors (GEX Max Change) ---
+                if maxchange_data and asset_ticker in maxchange_data:
+                    mc = maxchange_data[asset_ticker]
+                    for prior_key in MAXCHANGE_PRIORS:
+                        prior_data = mc.get(prior_key)
+                        if not prior_data or len(prior_data) < 2:
+                            continue
+                        strike, gex_value = prior_data[0], prior_data[1]
+                        if not strike or strike == 0:
+                            continue
+                        label = MAXCHANGE_PRIOR_LABELS.get(prior_key, prior_key)
+                        direction = "+" if gex_value >= 0 else ""
+                        note_text = f"GEX {label} {direction}{gex_value:.0f}"
+                        color = COLOR_MAXCHANGE_BUILD if gex_value >= 0 else COLOR_MAXCHANGE_CUT
+                        fg_color, bg_color = color.split(',')
+                        writer.writerow({
+                            "Symbol": bookmap_symbol,
+                            "Price Level": strike,
+                            "Note": note_text,
+                            "Foreground Color": fg_color,
+                            "Background Color": bg_color,
+                            "Text Alignment": "center",
+                            "Diameter": "1",
+                            "Draw Note Price Horizontal Line": "FALSE"
+                        })
+                        # Cross-asset: also write on Futures chart
+                        if asset_ticker in multipliers:
+                            futures_ticker_mc, mult_mc = multipliers[asset_ticker]
+                            futures_sym_mc = symbol_mapping.get(futures_ticker_mc, futures_ticker_mc)
+                            converted_strike = round(strike * mult_mc, 2)
+                            note_cross = f"GEX {label} ({asset_ticker}) {direction}{gex_value:.0f}"
+                            writer.writerow({
+                                "Symbol": futures_sym_mc,
+                                "Price Level": converted_strike,
+                                "Note": note_cross,
+                                "Foreground Color": fg_color,
+                                "Background Color": bg_color,
+                                "Text Alignment": "center",
+                                "Diameter": "1",
+                                "Draw Note Price Horizontal Line": "FALSE"
+                            })
+
         print(f"Lokale CSV-Datei erstellt: {FINAL_CSV_PATH}")
         return True
     except IOError as e:
         print(f"Fehler beim Schreiben der CSV-Datei: {e}")
-        return False
         return False
 
 def run_git_command(command_list):
@@ -350,15 +419,19 @@ if __name__ == "__main__":
         sys.exit(1)
 
     assets_results = []
+    maxchange_results = {}
     for asset_ticker in ASSETS_TO_TRACK:
         print(f"Verarbeite Asset: {asset_ticker}...")
         for aggregation_period in AGGREGATION_PERIODS:
             gex_json = fetch_gex_data(asset_ticker, aggregation_period)
             assets_results.append((asset_ticker, aggregation_period, gex_json))
+            mc_json = fetch_maxchange_data(asset_ticker, aggregation_period)
+            if mc_json and not mc_json.get('error'):
+                maxchange_results[asset_ticker] = mc_json
 
     if assets_results:
         # 1. CSV-Datei lokal im Git-Repo generieren
-        if generate_local_csv(assets_results):
+        if generate_local_csv(assets_results, maxchange_data=maxchange_results):
             # 2. Git add, commit, push ausführen
             push_to_github()
 
