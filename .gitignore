@@ -1,0 +1,8 @@
+# Secret keys - never commit these
+.env
+
+# Log files
+*.log
+
+# macOS
+.DS_Store
